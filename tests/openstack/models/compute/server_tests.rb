@@ -216,5 +216,27 @@ Shindo.tests("Fog::Compute[:openstack] | server", ['openstack']) do
       end
     end
 
+#     tests('#block_device_mapping').succeeds do
+#       fog    = Fog::Compute[:openstack]
+#       flavor = fog.flavors.first.id
+#       block_device  = {
+#         :delete_on_termination => true,
+#         :device_name           => "device name",
+#         :volume_id             => "400fefb4-7f0b-11e4-a4eb-56847afe9799",
+#         :volume_size           => 1,
+#       }
+#       server = fog.create(
+#         :name       => 'test server',
+#         :flavor_ref => flavor,
+#         :block_device_mapping => block_device,
+#       )
+#       server.save
+# puts "XXXXX SERVER #{server.volumes.inspect}"
+
+#       # server.associate_address(ip1.fixed_ip_address)
+#       # server.reload
+
+#       # returns( ["192.168.11.3"] ) { server.floating_ip_addresses }
+#     end
   end
 end

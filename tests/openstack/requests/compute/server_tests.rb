@@ -1,23 +1,24 @@
 Shindo.tests('Fog::Compute[:openstack] | server requests', ['openstack']) do
 
-  @detailed_server_format = {
-    'id'         => String,
-    'addresses'  => Hash,
-    'flavor'     => Hash,
-    'hostId'     => String,
-    'image'      => Hash,
-    'metadata'   => Hash,
-    'name'       => String,
-    'progress'   => Integer,
-    'status'     => String,
-    'accessIPv4' => Fog::Nullable::String,
-    'accessIPv6' => Fog::Nullable::String,
-    'links'      => Array,
-    'created'    => String,
-    'updated'    => String,
-    'user_id'    => String,
+  @base_server_format = {
+    'id'           => String,
+    'addresses'    => Hash,
+    'flavor'       => Hash,
+    'hostId'       => String,
+    'metadata'     => Hash,
+    'name'         => String,
+    'progress'     => Integer,
+    'status'       => String,
+    'accessIPv4'   => Fog::Nullable::String,
+    'accessIPv6'   => Fog::Nullable::String,
+    'links'        => Array,
+    'created'      => String,
+    'updated'      => String,
+    'user_id'      => String,
     'config_drive' => String,
   }
+
+  @detailed_server_format = @base_server_format.merge('image' => Hash)
 
   @create_format = {
     'adminPass'       => String,
@@ -51,6 +52,34 @@ Shindo.tests('Fog::Compute[:openstack] | server requests', ['openstack']) do
     @flavor_id = get_flavor_ref
     @security_group_name = get_security_group_ref
 
+    #CREATE_SINGLE_FROM_VOLUME
+    tests('#create_server("test", nil , #{@flavor_id}) with a volume').formats(@create_format, false) do
+      compute.create_volume('test', 'this is a test volume', 1)
+      @volume = compute.volumes.all.first
+      volume_data = {
+        :delete_on_termination => true,
+        :device_name           => "test volume",
+        :volume_id             => @volume.id,
+        :volume_size           => 1,
+      }
+      data = compute.create_server("test", nil, @flavor_id, "block_device_mapping" => volume_data).body['server']
+      @server_id = data['id']
+      data
+    end
+
+    compute.servers.get(@server_id).wait_for { ready? }
+
+    tests("#get_server_details(#{@server_id})").formats(@base_server_format, false) do
+      compute.get_server_details(@server_id).body['server']
+    end
+
+    tests("#block_device_mapping").succeeds do
+      compute.servers.get(@server_id).volumes.first.id == @volume.id
+    end
+
+
+
+    #CREATE_SINGLE_FROM_IMAGE
     tests('#create_server("test", #{@image_id} , 19)').formats(@create_format, false) do
       data = Fog::Compute[:openstack].create_server("test", @image_id, @flavor_id).body['server']
       @server_id = data['id']
@@ -59,12 +88,11 @@ Shindo.tests('Fog::Compute[:openstack] | server requests', ['openstack']) do
 
     Fog::Compute[:openstack].servers.get(@server_id).wait_for { ready? }
 
-    #CREATE
     tests("#get_server_details(#{@server_id})").formats(@detailed_server_format, false) do
       Fog::Compute[:openstack].get_server_details(@server_id).body['server']
     end
 
-    #MULTI_CREATE
+    #MULTI_CREATE_FROM_IMAGE
     tests('#create_server("test", #{@image_id} , 19, {"min_count" => 2, "return_reservation_id" => "True"})').formats(@reservation_format, false) do
       data = Fog::Compute[:openstack].create_server("test", @image_id, @flavor_id, {"min_count" => 2, "return_reservation_id" => "True"}).body
       @reservation_id = data['reservation_id']

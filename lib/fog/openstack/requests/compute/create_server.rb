@@ -90,8 +90,13 @@ module Fog
         end
       end
 
+      def some_method
+        puts "!!!!!SOME METHOD!!!"
+      end
+
       class Mock
         def create_server(name, image_ref, flavor_ref, options = {})
+          puts "XXXXX HERE!!!"
           response = Excon::Response.new
           response.status = 202
 
@@ -146,6 +151,15 @@ module Fog
               'id'              => server_id,
               'links'           => mock_data['links'],
             }
+          end
+
+          if block_device = options["block_device_mapping"]
+            volume = compute.volumes.get(block_device[:volume_id])
+      puts "IN MOCK OBJECT VOLUME #{volume.inspect}"
+            volume.attach(server_id, block_device[:device_name])
+            # volume.attributes(:attachments => [{"device" => block_device[:device_name], "serverId" => server_id, "id" => volume.id, "volumeId" => volume.id}])
+      puts "IN MOCK OBJECT after changes VOLUME #{volume.inspect}"
+            puts "BLOCK DEVICE SETTINGS #{block_device}"
           end
 
           self.data[:last_modified][:servers][server_id] = Time.now
