@@ -102,10 +102,6 @@ Shindo.tests('Fog::Compute[:openstack] | server requests', ['openstack']) do
     end
 
     tests("#block_device_mapping_v2").succeeds do
-      puts "XXXXX ALL VOLUMES #{compute.volumes.all.inspect}"
-      puts "XXXXX VOLUME #{@volume.inspect}"
-      puts "XXXXX ALL SERVERs #{compute.servers.all.inspect}"
-      puts "XXXXX SERVER #{compute.servers.get(@server_id).inspect}"
       compute.servers.get(@server_id).volumes.collect(&:id).sort == [@volume1_id, @volume2_id].sort
     end
 
